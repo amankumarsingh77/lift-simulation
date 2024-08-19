@@ -1,0 +1,81 @@
+
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f0f0f0;
+        }
+        .simulation-container {
+            position: relative;
+            width: 900px; /* Increased from 800px */
+        }
+        .building {
+            width: 880px; /* Increased from 780px */
+            height: 400px;
+            background-color: #fff;
+            position: relative;
+            border: 2px solid #333;
+            overflow: hidden;
+        }
+        .floor {
+            border-bottom: 1px solid #666;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 10px;
+        }
+        .floor-label {
+            font-weight: bold;
+        }
+        .lift {
+            width: 80px; /* Increased from 50px */
+            background-color: #3498db;
+            position: absolute;
+            bottom: 0;
+            transition: all 3s ease-in-out;
+            border: 2px solid #2980b9;
+            box-sizing: border-box;
+            border-radius: 5px 5px 0 0;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            padding-bottom: 5px;
+            font-weight: bold;
+            color: white;
+            text-shadow: 1px 1px 1px rgba(0,0,0,0.5);
+        }
+        .buttons {
+            display: flex;
+            flex-direction: column;
+        }
+        .button {
+            margin: 2px;
+            padding: 5px 10px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .up { background-color: #2ecc71; }
+        .down { background-color: #f1c40f; }
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        input[type="number"] {
+            width: 50px;
+            padding: 5px;
+        }
+        button {
+            padding: 5px 10px;
+            background-color: #3498db;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+        #initializeBtn {
+            margin-top: 10px;
+        }
