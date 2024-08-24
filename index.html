@@ -9,16 +9,16 @@
 <body>
     <div class="simulation-container">
         <div class="controls">
-            <div>
+            <div class="control-group">
                 <label for="floorCount">Number of Floors:</label>
-                <input type="number" id="floorCount" min="2" max="10" value="4">
+                <input type="number" id="floorCount" min="2" max="10" value="5">
             </div>
-            <div>
+            <div class="control-group">
                 <label for="liftCount">Number of Lifts:</label>
-                <input type="number" id="liftCount" min="1" max="5" value="1">
+                <input type="number" id="liftCount" min="1" max="5" value="2">
             </div>
+            <button id="initializeBtn">Initialize Simulation</button>
         </div>
-        <button id="initializeBtn">Initialize Simulation</button>
         <div id="building" class="building"></div>
     </div>
     <script src="./js/main.js"></script>

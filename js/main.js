@@ -1,37 +1,76 @@
 class Lift {
-  constructor(id, totalFloors) {
+  constructor(id, totalFloors, buildingHeight) {
     this.id = id;
     this.currentFloor = 1;
     this.isBusy = false;
     this.totalFloors = totalFloors;
+    this.buildingHeight = buildingHeight;
     this.element = this.createLiftElement();
+    this.speed = 100;
   }
 
   createLiftElement() {
     const element = document.createElement("div");
     element.id = this.id;
     element.className = "lift";
-    const floorHeight = 400 / this.totalFloors;
+    const floorHeight = this.buildingHeight / this.totalFloors;
     element.style.height = `${floorHeight - 10}px`;
     element.style.bottom = "0px";
-    element.textContent = this.id.replace("lift", "L");
+
+    const doors = document.createElement("div");
+    doors.className = "lift-doors";
+
+    const leftDoor = document.createElement("div");
+    leftDoor.className = "lift-door left";
+
+    const rightDoor = document.createElement("div");
+    rightDoor.className = "lift-door right";
+
+    doors.appendChild(leftDoor);
+    doors.appendChild(rightDoor);
+    element.appendChild(doors);
+
     return element;
   }
 
   async moveTo(floor) {
-    this.isBusy = true;
-    const floorHeight = 400 / this.totalFloors;
-    const distance = (floor - 1) * floorHeight;
-    this.element.style.transition = "bottom 3s";
-    this.element.style.bottom = `${distance}px`;
+    const floorHeight = this.buildingHeight / this.totalFloors;
+    const currentPosition = (this.currentFloor - 1) * floorHeight;
+    const targetPosition = (floor - 1) * floorHeight;
+    const distance = Math.abs(targetPosition - currentPosition);
+    const duration = distance / this.speed;
+
+    this.element.style.transition = `bottom ${duration}s linear`;
+    this.element.style.bottom = `${targetPosition}px`;
 
     return new Promise((resolve) => {
       setTimeout(() => {
         this.currentFloor = floor;
-        this.isBusy = false;
         resolve();
-      }, 3000);
+      }, duration * 1000);
     });
+  }
+
+  async openDoors() {
+    const leftDoor = this.element.querySelector(".lift-door.left");
+    const rightDoor = this.element.querySelector(".lift-door.right");
+    leftDoor.classList.add("open");
+    rightDoor.classList.add("open");
+    return new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+
+  async closeDoors() {
+    const leftDoor = this.element.querySelector(".lift-door.left");
+    const rightDoor = this.element.querySelector(".lift-door.right");
+    leftDoor.classList.remove("open");
+    rightDoor.classList.remove("open");
+    return new Promise((resolve) => setTimeout(resolve, 1000));
+  }
+
+  async performFloorOperation() {
+    await this.openDoors();
+    await new Promise((resolve) => setTimeout(resolve, 1500));
+    await this.closeDoors();
   }
 }
 
@@ -40,9 +79,26 @@ class LiftSystem {
     this.floorCount = floorCount;
     this.liftCount = liftCount;
     this.lifts = [];
+    this.buildingHeight = parseInt(
+      getComputedStyle(document.documentElement).getPropertyValue(
+        "--building-height"
+      )
+    );
     this.buildingElement = document.getElementById("building");
     this.pendingCalls = new Set();
+    this.occupiedFloors = new Set();
     this.initialize();
+  }
+
+  updateBuildingHeight() {
+    this.buildingHeight = parseInt(
+      getComputedStyle(document.documentElement).getPropertyValue(
+        "--building-height"
+      )
+    );
+    if (isNaN(this.buildingHeight)) {
+      this.buildingHeight = 400;
+    }
   }
 
   initialize() {
@@ -53,7 +109,7 @@ class LiftSystem {
 
   createFloors() {
     this.buildingElement.innerHTML = "";
-    const floorHeight = 400 / this.floorCount;
+    const floorHeight = this.buildingHeight / this.floorCount;
 
     for (let i = this.floorCount; i > 0; i--) {
       const floor = document.createElement("div");
@@ -62,8 +118,6 @@ class LiftSystem {
 
       const label = document.createElement("span");
       label.className = "floor-label";
-      label.textContent = `Floor ${i}`;
-
       const buttons = document.createElement("div");
       buttons.className = "buttons";
 
@@ -93,7 +147,11 @@ class LiftSystem {
 
   createLifts() {
     for (let i = 0; i < this.liftCount; i++) {
-      const lift = new Lift(`lift${i + 1}`, this.floorCount);
+      const lift = new Lift(
+        `lift${i + 1}`,
+        this.floorCount,
+        this.buildingHeight
+      );
       this.lifts.push(lift);
       this.buildingElement.appendChild(lift.element);
     }
@@ -101,7 +159,12 @@ class LiftSystem {
 
   updateLiftPositions() {
     const buildingWidth = this.buildingElement.offsetWidth;
-    const liftWidth = 80;
+    const liftWidth =
+      parseInt(
+        getComputedStyle(document.documentElement).getPropertyValue(
+          "--lift-width"
+        )
+      ) || 80;
     const spacing = 30;
     const totalWidth =
       this.lifts.length * liftWidth + (this.lifts.length - 1) * spacing;
@@ -113,14 +176,26 @@ class LiftSystem {
     });
   }
 
-  findAvailableLift() {
-    return this.lifts.find((lift) => !lift.isBusy);
+  findNearestAvailableLift(floor) {
+    let nearestLift = null;
+    let shortestDistance = Infinity;
+
+    for (const lift of this.lifts) {
+      if (!lift.isBusy) {
+        const distance = Math.abs(lift.currentFloor - floor);
+        if (distance < shortestDistance) {
+          shortestDistance = distance;
+          nearestLift = lift;
+        }
+      }
+    }
+
+    return nearestLift;
   }
 
   async callLift(floor, direction) {
     const callId = `${floor}-${direction}`;
-    if (this.pendingCalls.has(callId)) {
-      console.log(`Call for floor ${floor} ${direction} already exists`);
+    if (this.pendingCalls.has(callId) || this.occupiedFloors.has(floor)) {
       return;
     }
 
@@ -130,17 +205,21 @@ class LiftSystem {
   }
 
   async processCall(floor, direction) {
-    const availableLift = this.findAvailableLift();
-    if (!availableLift) {
-      console.log("All lifts are busy");
+    const nearestLift = this.findNearestAvailableLift(floor);
+    if (!nearestLift) {
+      console.log("No available lifts");
       return;
     }
 
-    console.log(
-      `Lift ${availableLift.id} moving to floor ${floor} for ${direction} direction`
-    );
-    await availableLift.moveTo(floor);
-    console.log(`Lift ${availableLift.id} arrived at floor ${floor}`);
+    nearestLift.isBusy = true;
+    this.occupiedFloors.add(floor);
+
+    await nearestLift.moveTo(floor);
+
+    await nearestLift.performFloorOperation();
+
+    this.occupiedFloors.delete(floor);
+    nearestLift.isBusy = false;
   }
 }
 
@@ -150,13 +229,30 @@ document.getElementById("initializeBtn").addEventListener("click", () => {
   const floorCount = parseInt(document.getElementById("floorCount").value);
   const liftCount = parseInt(document.getElementById("liftCount").value);
 
-  liftSystem = new LiftSystem(floorCount, liftCount);
+  try {
+    liftSystem = new LiftSystem(floorCount, liftCount);
 
-  document.querySelectorAll(".button").forEach((button) => {
-    button.addEventListener("click", (event) => {
-      const floor = parseInt(event.target.dataset.floor);
-      const direction = event.target.dataset.direction;
-      liftSystem.callLift(floor, direction);
+    document.querySelectorAll(".button").forEach((button) => {
+      button.addEventListener("click", (event) => {
+        const floor = parseInt(event.target.dataset.floor);
+        const direction = event.target.dataset.direction;
+        liftSystem.callLift(floor, direction);
+      });
     });
-  });
+  } catch (error) {
+    console.error("Error initializing lift system:", error.message);
+    alert(
+      "Error initializing lift system. Please check the console for details."
+    );
+  }
+});
+
+window.addEventListener("resize", () => {
+  if (liftSystem) {
+    liftSystem.updateBuildingHeight();
+    liftSystem.updateLiftPositions();
+    liftSystem.lifts.forEach((lift) => {
+      lift.buildingHeight = liftSystem.buildingHeight;
+    });
+  }
 });
