@@ -1,19 +1,8 @@
 :root {
-    --building-width: 880px;
-    --building-height: 400px;
+    --building-width: auto;
+    --building-height: auto;
     --lift-width: 80px;
-}
-
-body {
-    font-family: Arial, sans-serif;
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    min-height: 100vh;
-    margin: 0;
-    background-color: #f0f0f0;
-    padding: 20px;
-    box-sizing: border-box;
+    --floor-height: 60px;
 }
 
 .simulation-container {
@@ -22,15 +11,16 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
+    max-height: 80vh;
+    overflow-y: auto;
 }
 
 .building {
     width: 100%;
-    height: var(--building-height);
+    height: calc(var(--floor-height) * var(--floor-count));
     background-color: #fff;
     position: relative;
     border: 2px solid #333;
-    overflow: hidden;
     box-shadow: 0 0 20px rgba(0, 0, 0, 0.1);
 }
 
@@ -40,21 +30,16 @@ body {
     align-items: center;
     justify-content: space-between;
     padding: 0 10px;
-    height: calc(var(--building-height) / var(--floor-count));
-}
-
-.floor-label {
-    font-weight: bold;
-    color: #333;
-    font-size: 0.8em;
+    height: var(--floor-height);
 }
 
 .lift {
     width: var(--lift-width);
+    height: calc(var(--floor-height) - 10px);
     background-color: #3498db;
     position: absolute;
     bottom: 0;
-    transition: bottom 3s ease-in-out;
+    transition: bottom 0.1s linear;
     border: 2px solid #2980b9;
     box-sizing: border-box;
     border-radius: 5px 5px 0 0;
@@ -159,8 +144,8 @@ button:hover { background-color: #2980b9; }
 @media (max-width: 768px) {
     :root {
         --building-width: 100%;
-        --building-height: 300px;
         --lift-width: 60px;
+        --floor-height: 50px;
     }
 
     .controls {
@@ -179,8 +164,8 @@ button:hover { background-color: #2980b9; }
 
 @media (max-width: 480px) {
     :root {
-        --building-height: 250px;
         --lift-width: 40px;
+        --floor-height: 40px;
     }
 
     .button { font-size: 0.7em; padding: 2px 4px; }
